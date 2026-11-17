@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 CORS(app,
      supports_credentials=True,
-     origins=["http://127.0.0.1:5000"]) # add other endpoints you want to be able to communicate with here as well.
+     origins=["http://127.0.0.1:5000", "http://192.168.110.157:5500, http://192.168.111.253, http://localhost:5000"]) # add other endpoints you want to be able to communicate with here as well.
      
 
 
@@ -27,21 +27,23 @@ logging.info("Server start")
 
 @app.route("/api/leaderboard/top=<int:top>")
 def get_team(top):
-    # try:
-    with psycopg.connect(conn_str) as conn:
-        with conn.cursor() as cur:
-            cur.execute(f"SELECT {top}")
+    try:
+        with psycopg.connect(conn_str) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT {top}")
 
-            data = cur.fetchall()
-            
-            leaderboard = {0:data}
+                data = cur.fetchall()
+                
+                leaderboard = {0:data}
 
-            for i in range(0,top):
-                leaderboard.update({i:top})
+                for i in range(0,top):
+                    leaderboard.update({i:{"Name":"Name"}})
+                    leaderboard[i].update({"Score":"Score"})
+                    leaderboard[i].update({"Time":"Time"})
 
-            return(leaderboard)
-    # except Exception:
-    #     return {"error": "Could not load data"}, 500
+                return(leaderboard)
+    except Exception:
+        return {"error": "Could not load data"}, 500
 
 
 
