@@ -59,9 +59,11 @@ def addToRunInfo():
         with conn.cursor() as cur:
             global id
             # data = request.get_json()
-            id = int(cur.execute("SELECT id FROM runInfo ORDER BY id DESC LIMIT 1;").fetchone()[0])+1
+            id = cur.execute("SELECT id FROM runInfo ORDER BY id DESC LIMIT 1;").fetchone()
             if (id == None):
                 id = 0
+            else:
+                id = int(id[0])+1
             name = "testname3"
             score = 1
             timeTaken = 1500000.05
@@ -84,9 +86,11 @@ def addToColors():
         with conn.cursor() as cur:
 
             runID = id
-            round = cur.execute(f"SELECT round FROM colors WHERE runID = {runID};").fetchone()
+            round = cur.execute(f"SELECT round FROM colors WHERE runID = {runID} ORDER BY round DESC LIMIT 1;").fetchone()
             if (round == None):
-                round = 0
+                round = 1
+            else:
+                round = int(round[0])+1
             color = 'red'
             timeTaken = .10
             cur.execute("INSERT INTO colors (runId, round, color, timeTaken) VALUES (%s, %s, %s, %s);", (runID, round, color, timeTaken, ))
