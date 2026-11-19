@@ -101,6 +101,18 @@ def addToColors():
     # except Exception:
     #     return {"error": "Could not load data"}, 500
 
+#Remove later
+@app.route("/api/clear", methods=["POST", "GET"])
+def clearTables():
+    # try:
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM runInfo;")
+            cur.execute("DELETE FROM runInfo;")
+            cur.execute("DELETE FROM colors;")
+
+            return "Cleared tables"
+
 @app.after_request
 def add_cors_headers(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
