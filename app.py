@@ -19,33 +19,92 @@ app = Flask(__name__)
 
 CORS(app,
      supports_credentials=True,
-     origins=["http://127.0.0.1:5000", "http://192.168.110.157:5500, http://192.168.111.253, http://localhost:5000"]) # add other endpoints you want to be able to communicate with here as well.
+     allow_headers=["Content-Type", "Authorization"],
+     origins=["http://127.0.0.1:5000", "http://192.168.110.157:5500, http://192.168.111.253, http://localhost:5000, http://127.0.0.1:5500"])
      
 
 
 logging.info("Server start")
 
 @app.route("/api/leaderboard/top=<int:top>")
-def get_team(top):
-    try:
-        with psycopg.connect(conn_str) as conn:
-            with conn.cursor() as cur:
-                cur.execute(f"SELECT {top}")
+def leaderboard(top):
+    # try:
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT playerName, score, timeTaken FROM runInfo ORDER BY score DESC, timeTaken, playerName")
 
-                data = cur.fetchall()
-                
-                leaderboard = {0:data}
-
+            data = cur.fetchall()
+            
+            leaderboard = {0:{
+                            "Name":"",
+                            "Score":0,
+                            "Time":0.00}}
+            try:
                 for i in range(0,top):
-                    leaderboard.update({i:{"Name":"Name"}})
-                    leaderboard[i].update({"Score":"Score"})
-                    leaderboard[i].update({"Time":"Time"})
+                    leaderboard.update({i:{"Name":data[i][0]}})
+                    leaderboard[i]["Score"] = data[i][1]
+                    leaderboard[i]["Time"] = data[i][2]
+            except Exception:
+                pass
 
-                return(leaderboard)
-    except Exception:
-        return {"error": "Could not load data"}, 500
+            return(leaderboard)
+# except Exception:
+    #     return {"error": "Could not load data"}, 500
+
+id = 0
+@app.route("/api/addtoruninfo", methods=["POST", "GET"])
+def addToRunInfo():
+    # try:
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+            global id
+            # data = request.get_json()
+            id = int(cur.execute("SELECT id FROM runInfo ORDER BY id DESC LIMIT 1;").fetchone()[0])+1
+            if (id == None):
+                id = 0
+            name = "testname3"
+            score = 1
+            timeTaken = 1500000.05
+            # return({"t":cur.execute("SELECT * FROM player WHERE playerName = %s;", (name, )).fetchall() == []})
+            if (cur.execute("SELECT * FROM player WHERE playerName = %s;", (name, )).fetchall() == []):
+                cur.execute("INSERT INTO player (playerName) VALUES (%s);", (name, ))
+            
+            cur.execute("INSERT INTO runInfo (id, playerName, score, timeTaken) VALUES (%s, %s, %s, %s);", (id, name, score, timeTaken))
+
+            return (cur.execute("SELECT * FROM runInfo;").fetchall())
 
 
+    # except Exception:
+    #     return {"error": "Could not load data"}, 500
+
+@app.route("/api/colors", methods=["POST", "GET"])
+def addToColors():
+    # try:
+    with psycopg.connect(conn_str) as conn:
+        with conn.cursor() as cur:
+
+            runID = id
+            round = cur.execute(f"SELECT round FROM colors WHERE runID = {runID};").fetchone()
+            if (round == None):
+                round = 0
+            color = 'red'
+            timeTaken = .10
+            cur.execute("INSERT INTO colors (runId, round, color, timeTaken) VALUES (%s, %s, %s, %s);", (runID, round, color, timeTaken, ))
+
+            return (cur.execute("SELECT * FROM colors").fetchall())
+
+
+    # except Exception:
+    #     return {"error": "Could not load data"}, 500
+
+@app.after_request
+def add_cors_headers(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return resp
+        
+          
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
